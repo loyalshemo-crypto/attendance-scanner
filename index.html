@@ -1,0 +1,58 @@
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>شاشة تبصيم الموقع</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; margin: 0; padding: 20px; background: #1e1e2e; color: #cdd6f4; }
+        .container { max-width: 400px; margin: 50px auto; background: #313244; padding: 30px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        h2 { color: #f5c2e7; margin-bottom: 5px; }
+        .site-name { font-size: 18px; color: #89b4fa; margin-bottom: 20px; font-weight: bold; }
+        #qrcode { display: flex; justify-content: center; background: white; padding: 20px; border-radius: 10px; width: 200px; height: 200px; margin: 0 auto 20px auto; }
+        .timer { font-size: 16px; color: #a6e3a1; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>نظام الحضور الذكي</h2>
+        <div class="site-name" id="siteDisplay">جاري تحديد الموقع...</div>
+        <div id="qrcode"></div>
+        <div class="timer" id="timer">بيتغير خلال: 20 ثانية</div>
+    </div>
+
+    <script>
+        // استخراج اسم الموقع من رابط الصفحة تلقائياً (مثال: hr.com/?site=Tagamoa)
+        const urlParams = new URLSearchParams(window.location.search);
+        const siteName = urlParams.get('site') || "Default_Site";
+        document.getElementById('siteDisplay').innerText = `موقع: ${siteName.replace('_', ' ')}`;
+
+        const secretKey = "MySuperSecretKey123"; // الباسوورد المشترك مع n8n
+        const qrDiv = document.getElementById("qrcode");
+        const timerDiv = document.getElementById("timer");
+        let qrcode = new QRCode(qrDiv, { width: 200, height: 200 });
+
+        function generateQR() {
+            const timeWindow = Math.floor(Date.now() / 20000); // طابع زمني يتغير كل 20 ثانية
+            const token = btoa(`${siteName}_${secretKey}_${timeWindow}`); // تشفير كود البصمة
+            qrcode.clear();
+            qrcode.makeCode(token);
+        }
+
+        let timeLeft = 20;
+        setInterval(() => {
+            timeLeft--;
+            timerDiv.innerText = `بيتغير خلال: ${timeLeft} ثانية`;
+            if (timeLeft <= 0) {
+                generateQR();
+                timeLeft = 20;
+            }
+        }, 1000);
+
+        generateQR();
+    </script>
+</body>
+</html>

@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ماسح الحضور</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; background: #11111b; color: #cdd6f4; margin: 0; padding: 10px; }
+        #reader { width: 100%; max-width: 400px; margin: 20px auto; border-radius: 10px; overflow: hidden; }
+        .status { margin-top: 20px; font-size: 18px; color: #fab387; }
+    </style>
+</head>
+<body>
+
+    <h3>وجه الكاميرا نحو كود المهندس</h3>
+    <div id="reader"></div>
+    <div class="status" id="status">جاري تهيئة النظام والكاميرا...</div>
+
+    <script>
+        // تهيئة مكتبة التليجرام
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand(); 
+
+        // دالة سحرية لضمان لقط الـ User ID بأي طريقة ممكنة
+        function getTelegramUserId() {
+            // الطريقة 1: محاولة لقطها من بيانات التليجرام المدمجة الحية
+            if (tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id) {
+                return String(tg.initDataUnsafe.user.id);
+            }
+            
+            // الطريقة 2: محاولة لقطها من الرابط كخطة بديلة (fallback)
+            const urlParams = new URLSearchParams(window.location.search);
+            const idFromUrl = urlParams.get('user_id');
+            if (idFromUrl) return idFromUrl;
+
+            // الطريقة 3: إذا فشل كل شيء (للتجربة والاختبار)
+            if (tg.initData && tg.initData.includes('user=')) {
+                try {
+                    const searchParams = new URLSearchParams(tg.initData);
+                    const userObj = JSON.parse(searchParams.get('user'));
+                    if (userObj && userObj.id) return String(userObj.id);
+                } catch(e) { console.error(e); }
+            }
+
+            return null;
+        }
+
+        // تحديث النص بعد تهيئة الكاميرا
+        document.getElementById('status').innerText = "وجه الكاميرا نحو كود المهندس الحية...";
+
+        function onScanSuccess(decodedText, decodedResult) {
+            document.getElementById('status').innerText = "تم لقط الكود! جاري التحقق من الهوية...";
+            html5QrcodeScanner.clear(); 
+
+            // جلب الـ ID المؤمّن
+            const userId = getTelegramUserId();
+
+            // تجهيز البيانات للإرسال
+            const dataToSend = {
+                token: decodedText,        
+                user_id: userId
+            };
+
+            const n8nWebhookUrl = "https://samovich.app.n8n.cloud/webhook-test/30cad4ad-6ba9-4bd5-bafe-1355f2b5d1aa";
+
+            // إرسال البيانات للـ Webhook
+            fetch(n8nWebhookUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(dataToSend)
+            })
+            .then(response => {
+                // نقفل الـ WebApp فوراً بعد نجاح الإرسال
+                setTimeout(() => { tg.close(); }, 500);
+            })
+            .catch(error => {
+                document.getElementById('status').innerText = "حدث خطأ في الإرسال، حاول مجدداً.";
+                console.error('Error:', error);
+            });
+        }
+
+        const html5QrcodeScanner = new Html5QrcodeScanner("reader", { 
+            fps: 10, 
+            qrbox: {width: 250, height: 250},
+            rememberLastUsedCamera: true,
+            supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA] 
+        });
+        
+        html5QrcodeScanner.render(onScanSuccess);
+    </script>
+</body>
+</html>
