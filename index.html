@@ -103,19 +103,42 @@ function onScanSuccess(decodedText, decodedResult) {
 
 
 
-    const dataToSend = {
+ navigator.geolocation.getCurrentPosition(
 
-        token: decodedText,
+function(position) {
 
-        user_id: userId
+const dataToSend = {
 
-    };
+token: decodedText,
+
+user_id: userId,
+
+latitude: position.coords.latitude,
+
+longitude: position.coords.longitude
+
+};
 
 
+sendAttendance(dataToSend);
+
+},
+
+function(error) {
+
+document.getElementById('status').innerText =
+"يجب السماح بالموقع لتسجيل الحضور";
+
+}
+
+);
+
+
+
+  function sendAttendance(dataToSend) {
 
     const n8nWebhookUrl =
     "https://brihanai.app.n8n.cloud/webhook-test/attendance";
-
 
 
     fetch(n8nWebhookUrl, {
