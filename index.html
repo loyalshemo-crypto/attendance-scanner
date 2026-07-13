@@ -4,96 +4,213 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ماسح الحضور</title>
+
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
+
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; background: #11111b; color: #cdd6f4; margin: 0; padding: 10px; }
-        #reader { width: 100%; max-width: 400px; margin: 20px auto; border-radius: 10px; overflow: hidden; }
-        .status { margin-top: 20px; font-size: 18px; color: #fab387; }
-    </style>
-</head>
-<body>
-
-    <h3>وجه الكاميرا نحو كود المهندس</h3>
-    <div id="reader"></div>
-    <div class="status" id="status">اختبار شيماء 123...</div>
-
-    <script>
-        // تهيئة مكتبة التليجرام
-        const tg = window.Telegram.WebApp;
-        tg.ready();
-        tg.expand(); 
-
-        // دالة سحرية لضمان لقط الـ User ID بأي طريقة ممكنة
-        function getTelegramUserId() {
-            // الطريقة 1: محاولة لقطها من بيانات التليجرام المدمجة الحية
-            if (tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id) {
-                return String(tg.initDataUnsafe.user.id);
-            }
-            
-            // الطريقة 2: محاولة لقطها من الرابط كخطة بديلة (fallback)
-            const urlParams = new URLSearchParams(window.location.search);
-            const idFromUrl = urlParams.get('user_id');
-            if (idFromUrl) return idFromUrl;
-
-            // الطريقة 3: إذا فشل كل شيء (للتجربة والاختبار)
-            if (tg.initData && tg.initData.includes('user=')) {
-                try {
-                    const searchParams = new URLSearchParams(tg.initData);
-                    const userObj = JSON.parse(searchParams.get('user'));
-                    if (userObj && userObj.id) return String(userObj.id);
-                } catch(e) { console.error(e); }
-            }
-
-            return null;
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background: #11111b;
+            color: #cdd6f4;
+            margin: 0;
+            padding: 10px;
         }
 
-        // تحديث النص بعد تهيئة الكاميرا
-        document.getElementById('status').innerText = "وجه الكاميرا نحو كود المهندس الحية...";
+        #reader {
+            width: 100%;
+            max-width: 400px;
+            margin: 20px auto;
+            border-radius: 10px;
+            overflow: hidden;
+        }
 
-        function onScanSuccess(decodedText, decodedResult) {
-            document.getElementById('status').innerText = "تم لقط الكود! جاري التحقق من الهوية...";
-           html5QrCode.stop();
+        .status {
+            margin-top: 20px;
+            font-size: 18px;
+            color: #fab387;
+        }
+    </style>
+</head>
 
-            // جلب الـ ID المؤمّن
-            const userId = getTelegramUserId();
+<body>
 
-            // تجهيز البيانات للإرسال
-            const dataToSend = {
-                token: decodedText,        
-                user_id: userId
-            };
-            alert("سيتم الإرسال إلى: " + n8nWebhookUrl);
+<h3>وجه الكاميرا نحو كود المهندس</h3>
 
-const n8nWebhookUrl = "https://brihanai.app.n8n.cloud/webhook-test/attendance";
-            // إرسال البيانات للـ Webhook (debug: log payload and URL)
-            console.log("Debug: sending attendance payload to webhook:", n8nWebhookUrl, dataToSend);
-            // إرسال البيانات للـ Webhook
-            fetch(n8nWebhookUrl, {
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(dataToSend)
+<div id="reader"></div>
+
+<div class="status" id="status">
+جاري تهيئة النظام والكاميرا...
+</div>
+
+
+<script>
+
+const tg = window.Telegram.WebApp;
+
+tg.ready();
+tg.expand();
+
+
+
+function getTelegramUserId() {
+
+    if (tg.initDataUnsafe &&
+        tg.initDataUnsafe.user &&
+        tg.initDataUnsafe.user.id) {
+
+        return String(tg.initDataUnsafe.user.id);
+    }
+
+
+    const urlParams = new URLSearchParams(window.location.search);
+
+    const idFromUrl = urlParams.get('user_id');
+
+    if (idFromUrl) return idFromUrl;
+
+
+    return null;
+}
+
+
+
+const html5QrCode = new Html5Qrcode("reader");
+
+const config = {
+    fps: 10,
+    qrbox: {
+        width: 250,
+        height: 250
+    }
+};
+
+
+
+function onScanSuccess(decodedText, decodedResult) {
+
+
+    document.getElementById('status').innerText =
+    "تم التقاط الكود! جاري التحقق...";
+
+
+    html5QrCode.stop();
+
+
+
+    const userId = getTelegramUserId();
+
+
+
+    const dataToSend = {
+
+        token: decodedText,
+
+        user_id: userId
+
+    };
+
+
+
+    const n8nWebhookUrl =
+    "https://brihanai.app.n8n.cloud/webhook-test/attendance";
+
+
+
+    fetch(n8nWebhookUrl, {
+
+        method: 'POST',
+
+        headers: {
+
+            'Content-Type': 'application/json'
+
+        },
+
+        body: JSON.stringify(dataToSend)
+
+    })
+
+
+    .then(async(response)=>{
+
+
+        const result = await response.text();
+
+
+        console.log(result);
+
+
+
+        document.getElementById('status').innerText =
+        "تم تسجيل الحضور بنجاح";
+
+
+        setTimeout(()=>{
+
+            tg.close();
+
+        },1000);
+
+
+    })
+
+
+    .catch(error=>{
+
+
+        console.error(error);
+
+
+        document.getElementById('status').innerText =
+        "حدث خطأ في الإرسال";
+
+
+    });
+
+
+}
+
+
+
+// تشغيل الكاميرا هنا في المكان الصحيح
+
+html5QrCode.start(
+
+    { facingMode: "environment" },
+
+    config,
+
+    onScanSuccess
+
+)
+
+.then(()=>{
+
+
+    document.getElementById('status').innerText =
+    "وجه الكاميرا نحو كود المهندس";
+
+
 })
-.then(async (response) => {
 
-    console.log("Status:", response.status);
 
-    const result = await response.text();
+.catch(err=>{
 
-    console.log("Response:", result);
 
-    setTimeout(() => {
-        tg.close();
-    }, 500);
+    console.error(err);
 
-})
-.catch((error) => {
 
-    console.error("Fetch Error:", error);
+    document.getElementById('status').innerText =
+    "لم يتم تشغيل الكاميرا: " + err;
 
-    document.getElementById("status").innerText =
-    "حدث خطأ في الإرسال";
 
 });
+
+
+</script>
+
+
+</body>
+</html>
