@@ -49,8 +49,7 @@
         }
 
         // تحديث النص بعد تهيئة الكاميرا
-        document.getElementById('status').innerText = "وجه الكاميرا نحو كود المهندس الحية...";
-
+document.getElementById('status').innerText = "تم تشغيل الكود";
         function onScanSuccess(decodedText, decodedResult) {
             document.getElementById('status').innerText = "تم لقط الكود! جاري التحقق من الهوية...";
            html5QrCode.stop();
