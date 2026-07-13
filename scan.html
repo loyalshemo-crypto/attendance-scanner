@@ -65,47 +65,34 @@
             };
 
 const n8nWebhookUrl = "https://brihanai.app.n8n.cloud/webhook-test/attendance";
+            // إرسال البيانات للـ Webhook (debug: log payload and URL)
+            console.log("Debug: sending attendance payload to webhook:", n8nWebhookUrl, dataToSend);
             // إرسال البيانات للـ Webhook
             fetch(n8nWebhookUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(dataToSend)
-            })
-            .then(response => {
-                // نقفل الـ WebApp فوراً بعد نجاح الإرسال
-                setTimeout(() => { tg.close(); }, 500);
-            })
-            .catch(error => {
-                document.getElementById('status').innerText = "حدث خطأ في الإرسال، حاول مجدداً.";
-                console.error('Error:', error);
-            });
-        }
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(dataToSend)
+})
+.then(async (response) => {
 
-const html5QrCode = new Html5Qrcode("reader");
+    console.log("Status:", response.status);
 
-Html5Qrcode.getCameras().then(devices => {
+    const result = await response.text();
 
-    if (devices.length) {
+    console.log("Response:", result);
 
-        html5QrCode.start(
-            { facingMode: "environment" }, // الكاميرا الخلفية
-            {
-                fps: 10,
-                qrbox: { width: 250, height: 250 }
-            },
-            onScanSuccess
-        );
+    setTimeout(() => {
+        tg.close();
+    }, 500);
 
-    } else {
+})
+.catch((error) => {
 
-        document.getElementById("status").innerText = "لم يتم العثور على كاميرا";
+    console.error("Fetch Error:", error);
 
-    }
-
-}).catch(err => {
-
-    console.error(err);
-
-    document.getElementById("status").innerText = "يرجى السماح باستخدام الكاميرا";
+    document.getElementById("status").innerText =
+    "حدث خطأ في الإرسال";
 
 });
