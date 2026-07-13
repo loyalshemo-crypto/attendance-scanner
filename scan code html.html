@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>ماسح الحضور</title>
+
+	<script src="https://telegram.org/js/telegram-web-app.js"></script>
+	<script src="https://unpkg.com/html5-qrcode"></script>
+
+	<style>
+		*{
+			box-sizing:border-box;
+		}
+
+		body{
+			margin:0;
+			padding:20px;
+			background:#11111b;
+			color:white;
+			font-family:Arial,sans-serif;
+			text-align:center;
+		}
+
+		h2{
+			margin-top:10px;
+		}
+
+		#reader{
+			width:100%;
+			max-width:420px;
+			margin:20px auto;
+			border-radius:12px;
+			overflow:hidden;
+		}
+
+		#status{
+			margin-top:20px;
+			font-size:18px;
+			color:#f9c74f;
+		}
+	</style>
+
+</head>
+
+<body>
+
+<h2>📷 امسح كود الحضور</h2>
+
+<div id="reader"></div>
+
+<div id="status">
+جاري تشغيل الكاميرا...
+</div>
+
+<script>
+
+const tg = window.Telegram.WebApp;
+
+tg.ready();
+tg.expand();
+
+const WEBHOOK_URL="https://brihanai.app.n8n.cloud/webhook-test/attendance";
+
+function getTelegramUserId(){
+
+	if(
+		tg.initDataUnsafe &&
+		tg.initDataUnsafe.user &&
+		tg.initDataUnsafe.user.id
+	){
+		return String(tg.initDataUnsafe.user.id);
+	}
+
+	const params=new URLSearchParams(location.search);
+
+	if(params.get("user_id")){
+		return params.get("user_id");
+	}
+
+	return "";
+}
+
+const html5QrCode=new Html5Qrcode("reader");
+
+function onScanSuccess(decodedText){
+
+	document.getElementById("status").innerHTML="⏳ جار إرسال الحضور...";
+
+	html5QrCode.stop().catch(()=>{});
+
+	const payload={
+
+		token:decodedText,
+
+		user_id:getTelegramUserId()
+
+	};
+
+	fetch(WEBHOOK_URL,{
+
+		method:"POST",
+
+		headers:{
+			"Content-Type":"application/json"
+		},
+
+		body:JSON.stringify(payload)
+
+	})
+
+	.then(async(res)=>{
+
+		if(!res.ok){
+
+			throw new Error("Webhook Error");
+
+		}
+
+		document.getElementById("status").innerHTML="✅ تم إرسال الحضور";
+
+		setTimeout(()=>{
+
+			tg.close();
+
+		},800);
+
+	})
+
+	.catch(err=>{
+
+		console.error(err);
+
+		document.getElementById("status").innerHTML="❌ فشل إرسال البيانات";
+
+	});
+
+}
+
+// Start camera and scanning
+Html5Qrcode.getCameras().then(cameras=>{
+	if(cameras && cameras.length){
+		const cameraId = cameras[0].id;
+		html5QrCode.start(cameraId, { fps: 10, qrbox: 250 }, onScanSuccess).catch(err=>{
+			document.getElementById("status").innerText = '❌ فشل تشغيل الكاميرا';
+			console.error(err);
+		});
+	} else {
+		document.getElementById("status").innerText = '❌ لا توجد كاميرا متاحة';
+	}
+}).catch(err=>{
+	document.getElementById("status").innerText = '❌ خطأ في الوصول للكاميرا';
+	console.error(err);
+});
+
+</script>
+
+</body>
+</html>
+
