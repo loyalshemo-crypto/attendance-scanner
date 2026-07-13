@@ -53,7 +53,7 @@
 
         function onScanSuccess(decodedText, decodedResult) {
             document.getElementById('status').innerText = "تم لقط الكود! جاري التحقق من الهوية...";
-            html5QrcodeScanner.clear(); 
+           html5QrCode.stop();
 
             // جلب الـ ID المؤمّن
             const userId = getTelegramUserId();
@@ -64,8 +64,7 @@
                 user_id: userId
             };
 
-            const n8nWebhookUrl = "https://samovich.app.n8n.cloud/webhook-test/30cad4ad-6ba9-4bd5-bafe-1355f2b5d1aa";
-
+const n8nWebhookUrl = "https://brihanai.app.n8n.cloud/webhook-test/attendance";
             // إرسال البيانات للـ Webhook
             fetch(n8nWebhookUrl, {
                 method: 'POST',
@@ -82,14 +81,31 @@
             });
         }
 
-        const html5QrcodeScanner = new Html5QrcodeScanner("reader", { 
-            fps: 10, 
-            qrbox: {width: 250, height: 250},
-            rememberLastUsedCamera: true,
-            supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA] 
-        });
-        
-        html5QrcodeScanner.render(onScanSuccess);
-    </script>
-</body>
-</html>
+const html5QrCode = new Html5Qrcode("reader");
+
+Html5Qrcode.getCameras().then(devices => {
+
+    if (devices.length) {
+
+        html5QrCode.start(
+            { facingMode: "environment" }, // الكاميرا الخلفية
+            {
+                fps: 10,
+                qrbox: { width: 250, height: 250 }
+            },
+            onScanSuccess
+        );
+
+    } else {
+
+        document.getElementById("status").innerText = "لم يتم العثور على كاميرا";
+
+    }
+
+}).catch(err => {
+
+    console.error(err);
+
+    document.getElementById("status").innerText = "يرجى السماح باستخدام الكاميرا";
+
+});
