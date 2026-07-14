@@ -86,7 +86,48 @@ const config = {
     }
 };
 
+function sendAttendance(dataToSend) {
 
+    const n8nWebhookUrl =
+    "https://brihanai.app.n8n.cloud/webhook-test/attendance";
+
+    fetch(n8nWebhookUrl, {
+
+        method: 'POST',
+
+        headers: {
+            'Content-Type': 'application/json'
+        },
+
+        body: JSON.stringify(dataToSend)
+
+    })
+
+    .then(async(response)=>{
+
+        const result = await response.text();
+
+        console.log(result);
+
+        document.getElementById('status').innerText =
+        "تم تسجيل الحضور بنجاح";
+
+        setTimeout(()=>{
+            tg.close();
+        },1000);
+
+    })
+
+    .catch(error=>{
+
+        console.error(error);
+
+        document.getElementById('status').innerText =
+        "حدث خطأ في الإرسال";
+
+    });
+
+}
 
 function onScanSuccess(decodedText, decodedResult) {
 
